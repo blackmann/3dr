@@ -13,6 +13,7 @@ const EngineError = error{
 };
 
 pub const Engine = struct {
+    allocator: std.mem.Allocator,
     renderer: Renderer,
     /// Only means it can keep rendering. Call `.start` to actually start rendering
     running: bool,
@@ -21,12 +22,12 @@ pub const Engine = struct {
     sdl_window: *c.SDL_Window,
     sdl_renderer: *c.SDL_Renderer,
     sdl_texture: *c.SDL_Texture,
-    last_render_time: i32 = 0,
-    color_buffer: [*]u32,
+    last_render_time: u32 = 0,
+    color_buffer: []u32,
 
     const Self = @This();
 
-    pub fn init(renderer: Renderer) !Self {
+    pub fn init(allocator: std.mem.Allocator, renderer: Renderer) !Self {
         if (c.SDL_Init(c.SDL_INIT_EVERYTHING) != 0) {
             return EngineError.InitializeError;
         }
@@ -50,22 +51,29 @@ pub const Engine = struct {
 
         errdefer c.SDL_DestroyRenderer(sdl_renderer);
 
+        var width = renderer.size.x; var height = renderer.size.y;
+
         const sdl_texture = c.SDL_CreateTexture(
             sdl_renderer,
             c.SDL_PIXELFORMAT_ABGR8888,
-            renderer.x,
-            renderer.y,
+            c.SDL_TEXTUREACCESS_STREAMING,
+            width,
+            height,
         ) orelse {
             return EngineError.TextureCreateError;
         };
 
-        return Renderer{
+        var cells = @intCast(usize, width) * @intCast(usize, height);
+        var color_buffer: []u32 = try allocator.alloc(u32, cells);
+
+        return Engine{
+            .allocator = allocator,
             .renderer = renderer,
             .running = true,
             .sdl_window = window,
             .sdl_renderer = sdl_renderer,
             .sdl_texture = sdl_texture,
-            .color_buffer = .{0} ** (renderer.size.y * renderer.size.x),
+            .color_buffer = color_buffer,
         };
     }
 
@@ -73,6 +81,8 @@ pub const Engine = struct {
         c.SDL_DestroyTexture(self.sdl_texture);
         c.SDL_DestroyRenderer(self.sdl_renderer);
         c.SDL_DestroyWindow(self.sdl_window);
+
+        self.allocator.free(self.color_buffer);
     }
 
     pub fn start(self: *Self) void {
@@ -91,17 +101,18 @@ pub const Engine = struct {
 
     fn requestAnimationFrame(self: *Self) void {
         var time_elapsed = c.SDL_GetTicks();
-        var render_interval = 1000 / self.renderer.fps;
-        var target_render_time = self.last_render_time + render_interval;
+        var render_interval = @divFloor(1000, self.renderer.fps);
+        var target_render_time: u32 = self.last_render_time + @intCast(u32, render_interval);
 
         if (time_elapsed < target_render_time) {
             c.SDL_Delay(target_render_time - time_elapsed);
         }
 
         self.processInput();
-        self.renderer.render();
+        self.renderer.render(self.color_buffer);
 
         self.last_render_time = c.SDL_GetTicks();
+
         self.loop();
     }
 

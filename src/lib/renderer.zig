@@ -14,11 +14,11 @@ pub const Renderer = struct {
 
     const Self = @This();
 
-    pub fn render(self: *Self, color_buffer: [*]u32) void {
+    pub fn render(self: *Self, color_buffer: []u32) void {
         self.clearBackground(color_buffer);
     }
 
-    fn clearBackground(self: *Self, color_buffer: [*]u32) void {
+    fn clearBackground(self: *Self, color_buffer: []u32) void {
       var x: usize = 0; var y: usize = 0;
         while (y < self.size.y) {
           while (x < self.size.x) {

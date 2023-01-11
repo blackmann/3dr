@@ -36,10 +36,10 @@ pub const App = struct {
         var cube1 = try objects.cube("Cube.001", 1, 1, 1, self.allocator);
         try self.renderer.scene.add(cube1);
 
-        var engine = try Engine.init(self.renderer);
+        var engine = try Engine.init(self.allocator, self.renderer);
         defer engine.deinit();
 
-        // engine.start();
+        engine.start();
     }
 };
 
