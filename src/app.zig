@@ -37,6 +37,7 @@ pub const App = struct {
         try self.renderer.scene.add(cube1);
 
         var engine = try Engine.init(self.renderer);
+        defer engine.deinit();
 
         engine.start();
     }
