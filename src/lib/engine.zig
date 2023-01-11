@@ -22,6 +22,7 @@ pub const Engine = struct {
     sdl_renderer: *c.SDL_Renderer,
     sdl_texture: *c.SDL_Texture,
     last_render_time: i32 = 0,
+    color_buffer: [*]u32,
 
     const Self = @This();
 
@@ -64,6 +65,7 @@ pub const Engine = struct {
             .sdl_window = window,
             .sdl_renderer = sdl_renderer,
             .sdl_texture = sdl_texture,
+            .color_buffer = .{0} ** (renderer.size.y * renderer.size.x),
         };
     }
 

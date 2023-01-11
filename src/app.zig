@@ -39,7 +39,7 @@ pub const App = struct {
         var engine = try Engine.init(self.renderer);
         defer engine.deinit();
 
-        engine.start();
+        // engine.start();
     }
 };
 

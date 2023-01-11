@@ -14,6 +14,7 @@ pub fn build(b: *std.build.Builder) void {
     const exe = b.addExecutable("3dr", "src/main.zig");
     exe.addIncludePath("/opt/homebrew/include");
     exe.addLibraryPath("/opt/homebrew/lib");
+    exe.linkSystemLibrary("SDL2");
     exe.setTarget(target);
     exe.setBuildMode(mode);
     exe.install();
