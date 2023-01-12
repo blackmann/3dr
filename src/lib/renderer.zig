@@ -16,6 +16,7 @@ pub const Renderer = struct {
 
     pub fn render(self: *Self, color_buffer: []u32) void {
         self.clearBackground(color_buffer);
+        self.renderScene(color_buffer);
     }
 
     fn clearBackground(self: *Self, color_buffer: []u32) void {
@@ -29,6 +30,12 @@ pub const Renderer = struct {
           x = 0;
           y += 1;
         }
+    }
+
+    fn renderScene(self: *Self, color_buffer: []u32) void {
+      for (self.scene.objects.items) |_| {
+        color_buffer[0] = 0;
+      }
     }
 
     pub fn deinit(self: *Self) void {
@@ -46,8 +53,11 @@ test "renderer" {
 
     defer renderer.deinit();
 
-    var color_buffer: [4]u32 = .{0} ** 4;
-    renderer.render(&color_buffer);
+    var cells = renderer.size.x * renderer.size.y;
+    var color_buffer: []u32 = try testing.allocator.alloc(u32, @intCast(u32, cells));
+    defer testing.allocator.free(color_buffer);
+
+    renderer.render(color_buffer);
 
     try testing.expectEqual(color_buffer[0], renderer.backgroundColor);
     try testing.expectEqual(color_buffer[3], renderer.backgroundColor);

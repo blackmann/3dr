@@ -1,20 +1,35 @@
 const std = @import("std");
 const Renderer = @import("./renderer.zig").Renderer;
+const Scene = @import("./scene.zig").Scene;
+const primitives = @import("./primitives.zig");
+const testing = std.testing;
+
+const Vector2D = primitives.Vector2D;
 
 const c = @cImport({
     @cInclude("SDL2/SDL.h");
 });
 
-const EngineError = error{
+pub const EngineError = error{
     InitializeError,
     WindowCreateError,
     RendererCreateError,
     TextureCreateError,
 };
 
+pub const Delegate = struct {
+    updateFn: *const fn (*Delegate) void,
+
+    const Self = @This();
+    pub fn update(self: *Self) void {
+        self.updateFn(self);
+    }
+};
+
 pub const Engine = struct {
     allocator: std.mem.Allocator,
     renderer: Renderer,
+    delegate: *Delegate,
     /// Only means it can keep rendering. Call `.start` to actually start rendering
     running: bool,
 
@@ -27,7 +42,7 @@ pub const Engine = struct {
 
     const Self = @This();
 
-    pub fn init(allocator: std.mem.Allocator, renderer: Renderer) !Self {
+    pub fn init(allocator: std.mem.Allocator, renderer: Renderer, delegate: *Delegate) !Self {
         if (c.SDL_Init(c.SDL_INIT_EVERYTHING) != 0) {
             return EngineError.InitializeError;
         }
@@ -70,6 +85,7 @@ pub const Engine = struct {
             .allocator = allocator,
             .renderer = renderer,
             .running = true,
+            .delegate = delegate,
             .sdl_window = window,
             .sdl_renderer = sdl_renderer,
             .sdl_texture = sdl_texture,
@@ -108,7 +124,7 @@ pub const Engine = struct {
             c.SDL_Delay(target_render_time - time_elapsed);
         }
 
-        self.processInput();
+        self.prepare();
         self.renderer.render(self.color_buffer);
 
         self.last_render_time = c.SDL_GetTicks();
@@ -116,5 +132,43 @@ pub const Engine = struct {
         self.loop();
     }
 
-    fn processInput(_: *Self) void {}
+    fn prepare(self: *Self) void {
+        self.delegate.update();
+    }
 };
+
+
+const A = struct {
+    name: u8,
+    delegate: Delegate,
+
+    fn init() A {
+        return A {
+            .name = 10,
+            .delegate = Delegate{.updateFn = update},
+        };
+    }
+
+    pub fn update(delegate: *Delegate) void {
+        const self = @fieldParentPtr(A, "delegate", delegate);
+        self.name = 15;
+    }
+};
+
+test "engine" {
+    var renderer = Renderer{
+        .scene = Scene.init("default", testing.allocator),
+        .size = Vector2D{.x = 100, .y = 100},
+        .fps = 12,
+    };
+
+    var a = A.init();
+
+    var engine = try Engine.init(testing.allocator, renderer, &a.delegate);
+    defer engine.deinit();
+
+    try testing.expectEqual(engine.renderer.scene.name, "default");
+    engine.prepare();
+
+    try testing.expectEqual(a.name, 15);
+}

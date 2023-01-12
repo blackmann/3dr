@@ -4,6 +4,7 @@ const Renderer = @import("./lib/renderer.zig").Renderer;
 const objects = @import("./lib/objects.zig");
 const primitives = @import("./lib/primitives.zig");
 const Engine = @import("./lib/engine.zig").Engine;
+const EngineDelegate = @import("./lib/engine.zig").Delegate;
 
 const testing = std.testing;
 const Vector2D = primitives.Vector2D;
@@ -11,6 +12,7 @@ const Vector2D = primitives.Vector2D;
 pub const App = struct {
     allocator: std.mem.Allocator,
     renderer: Renderer,
+    engineDelegate: EngineDelegate,
 
     const Self = @This();
 
@@ -25,6 +27,7 @@ pub const App = struct {
         return App{
             .allocator = allocator,
             .renderer = renderer,
+            .engineDelegate = EngineDelegate{ .updateFn = update },
         };
     }
 
@@ -32,21 +35,25 @@ pub const App = struct {
         self.renderer.deinit();
     }
 
-    pub fn start(self: *Self) !void {
+    pub fn start(self: *Self, dryRun: bool) !void {
         var cube1 = try objects.cube("Cube.001", 1, 1, 1, self.allocator);
         try self.renderer.scene.add(cube1);
 
-        var engine = try Engine.init(self.allocator, self.renderer);
+        var engine = try Engine.init(self.allocator, self.renderer, &self.engineDelegate);
         defer engine.deinit();
 
-        engine.start();
+        if (!dryRun) {
+            engine.start();
+        }
     }
+
+    pub fn update(_: *EngineDelegate) void {}
 };
 
 test "app init" {
     var app = App.init(testing.allocator);
     defer app.deinit();
 
-    try app.start();
+    try app.start(true);
     try testing.expectEqual(app.renderer.scene.objects.items.len, 1);
 }

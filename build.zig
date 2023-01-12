@@ -12,9 +12,7 @@ pub fn build(b: *std.build.Builder) void {
     const mode = b.standardReleaseOptions();
 
     const exe = b.addExecutable("3dr", "src/main.zig");
-    exe.addIncludePath("/opt/homebrew/include");
-    exe.addLibraryPath("/opt/homebrew/lib");
-    exe.linkSystemLibrary("SDL2");
+    addCommonLibs(exe);
     exe.setTarget(target);
     exe.setBuildMode(mode);
     exe.install();
@@ -34,4 +32,10 @@ pub fn build(b: *std.build.Builder) void {
 
     const test_step = b.step("test", "Run unit tests");
     test_step.dependOn(&exe_tests.step);
+}
+
+fn addCommonLibs(step: *std.build.LibExeObjStep) void {
+    step.addIncludePath("/opt/homebrew/include");
+    step.addLibraryPath("/opt/homebrew/lib");
+    step.linkSystemLibrary("SDL2");
 }
