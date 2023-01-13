@@ -7,5 +7,5 @@ pub fn main() !void {
 
     var allocator = arena.allocator();
     var app = App.init(allocator);
-    try app.start();
+    try app.start(false);
 }
