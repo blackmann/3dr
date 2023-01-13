@@ -5,6 +5,7 @@ const primitives = @import("./primitives.zig");
 const testing = std.testing;
 
 const Vector2D = primitives.Vector2D;
+const ArrayList = std.ArrayList;
 
 const c = @cImport({
     @cInclude("SDL2/SDL.h");
@@ -91,21 +92,7 @@ pub const Engine = struct {
         self.allocator.free(self.color_buffer);
     }
 
-    pub fn start(self: *Self) void {
-        self.loop();
-    }
-
-    pub fn stop(self: *Self) void {
-        self.running = false;
-    }
-
-    fn loop(self: *Self) void {
-        if (self.running) {
-            self.requestAnimationFrame();
-        }
-    }
-
-    fn requestAnimationFrame(self: *Self) void {
+    pub fn requestAnimationFrame(self: *Self) void {
         var time_elapsed = c.SDL_GetTicks();
         var render_interval = @divFloor(1000, self.renderer.fps);
         var target_render_time: u32 = self.last_render_time + @intCast(u32, render_interval);
@@ -114,30 +101,35 @@ pub const Engine = struct {
             c.SDL_Delay(target_render_time - time_elapsed);
         }
 
-        self.prepare();
         self.renderer.render(self.color_buffer);
         self.renderBuffer();
 
         self.last_render_time = c.SDL_GetTicks();
-
-        self.loop();
     }
 
-    fn prepare(_: *Self) void {
+    pub fn pollEvents(self: *Self) ArrayList(u32) {
         var event: c.SDL_Event = undefined;
-        _ = c.SDL_PollEvent(&event);
 
-        switch (event.type) {
-            c.SDL_KEYDOWN => {
-                _ = event.key.keysym.sym;
-            },
-
-            else => {},
+        var events = ArrayList(u32).init(self.allocator);
+        while (c.SDL_PollEvent(&event) != 0) {
+            _ = events.append(event.type) catch {};
         }
+
+        return events;
     }
 
-    fn renderBuffer(_: *Self) void {
+    fn renderBuffer(self: *Self) void {
+        _ = c.SDL_RenderClear(self.sdl_renderer);
 
+        _ = c.SDL_UpdateTexture(
+            self.sdl_texture,
+            null,
+            @ptrCast(*const anyopaque, self.color_buffer),
+            comptime @sizeOf(u32) * self.renderer.size.x,
+        );
+
+        _ = c.SDL_RenderCopy(self.sdl_renderer, self.sdl_texture, null, null);
+        _ = c.SDL_RenderPresent(self.sdl_renderer);
     }
 };
 
@@ -152,5 +144,4 @@ test "engine" {
     defer engine.deinit();
 
     try testing.expectEqual(engine.renderer.scene.name, "default");
-    engine.prepare();
 }

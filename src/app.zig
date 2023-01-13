@@ -18,8 +18,8 @@ pub const App = struct {
         var scene = Scene.init("default", allocator);
         var renderer = Renderer{
             .scene = scene,
-            .size = Vector2D{ .x = 1960, .y = 1080 },
-            .fps = 24,
+            .size = Vector2D{ .x = 640, .y = 400 },
+            .fps = 8,
         };
 
         return App{
@@ -39,8 +39,14 @@ pub const App = struct {
         var engine = try Engine.init(self.allocator, self.renderer);
         defer engine.deinit();
 
-        if (!dryRun) {
-            engine.start();
+        var running = true;
+        var frame_count: u16 = 0;
+
+        while (!dryRun and running and frame_count < 80) {
+            _ = engine.pollEvents();
+
+            engine.requestAnimationFrame();
+            frame_count += 1;
         }
     }
 };

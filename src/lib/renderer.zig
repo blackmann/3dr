@@ -23,7 +23,7 @@ pub const Renderer = struct {
       var x: usize = 0; var y: usize = 0;
         while (y < self.size.y) {
           while (x < self.size.x) {
-            var width = @intCast(usize, self.size.y);
+            var width = @intCast(usize, self.size.x);
             color_buffer[y * width + x] = self.backgroundColor;
             x += 1;
           }
