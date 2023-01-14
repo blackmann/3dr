@@ -33,7 +33,7 @@ pub const App = struct {
     }
 
     pub fn start(self: *Self, dryRun: bool) !void {
-        var cube1 = try objects.cube("Cube.001", 1, 1, 1, self.allocator);
+        var cube1 = try objects.cube("Cube.001", 100, 100, 100, self.allocator);
         try self.renderer.scene.add(cube1);
 
         var engine = try Engine.init(self.allocator, self.renderer);

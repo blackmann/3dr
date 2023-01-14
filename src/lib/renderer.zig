@@ -2,8 +2,12 @@ const std = @import("std");
 const primitives = @import("./primitives.zig");
 
 const testing = std.testing;
+const math = std.math;
+const ArrayList = std.ArrayList;
 const Scene = @import("./scene.zig").Scene;
 const Vector2D = primitives.Vector2D;
+const Vector3D = primitives.Vector3D;
+const Object = primitives.Object;
 
 pub const Renderer = struct {
     scene: Scene,
@@ -15,33 +19,106 @@ pub const Renderer = struct {
     const Self = @This();
 
     pub fn render(self: *Self, color_buffer: []u32) void {
-        self.clearBackground(color_buffer);
+        self.clearCanvas(color_buffer);
         self.renderScene(color_buffer);
     }
 
-    fn clearBackground(self: *Self, color_buffer: []u32) void {
-      var x: usize = 0; var y: usize = 0;
+    fn clearCanvas(self: *Self, color_buffer: []u32) void {
+        var x: usize = 0;
+        var y: usize = 0;
         while (y < self.size.y) {
-          while (x < self.size.x) {
-            var width = @intCast(usize, self.size.x);
-            color_buffer[y * width + x] = self.backgroundColor;
-            x += 1;
-          }
-          x = 0;
-          y += 1;
+            while (x < self.size.x) {
+                var width = @intCast(usize, self.size.x);
+                color_buffer[y * width + x] = self.backgroundColor;
+                x += 1;
+            }
+            x = 0;
+            y += 1;
         }
     }
 
     fn renderScene(self: *Self, color_buffer: []u32) void {
-      for (self.scene.objects.items) |_| {
-        color_buffer[0] = 0;
-      }
+        for (self.scene.objects.items) |obj| {
+            for (obj.faces.items) |face| {
+                self.drawFace(obj, face, color_buffer);
+            }
+        }
+    }
+
+    fn drawFace(self: *Self, obj: Object, face: ArrayList(usize), color_buffer: []u32) void {
+        var i: usize = 0;
+        var vertices = obj.vertices.items;
+
+        while (i < face.items.len - 1) {
+            var v1 = vertices[face.items[i]];
+            var v2 = vertices[face.items[i + 1]];
+
+            var v1_transformed = applyTransformation(v1, obj);
+            var v2_transformed = applyTransformation(v2, obj);
+
+            self.drawLine(v1_transformed, v2_transformed, color_buffer);
+
+            i += 1;
+        }
+
+        self.drawLine(
+            applyTransformation(vertices[face.items[i]], obj),
+            applyTransformation(vertices[face.items[0]], obj),
+            color_buffer,
+        );
+    }
+
+    /// https://en.wikipedia.org/wiki/Digital_differential_analyzer_(graphics_algorithm)
+    fn drawLine(self: *Self, v1: Vector3D, v2: Vector3D, color_buffer: []u32) void {
+        var v1_projected = v1.project2D();
+        var v2_projected = v2.project2D();
+
+        var dx = v2_projected.x - v1_projected.x;
+        var dy = v2_projected.y - v1_projected.x;
+
+        var max_steps = math.max(math.absInt(dx) catch 0, math.absInt(dy) catch 0);
+        var steps = if (max_steps == 0) 1 else max_steps;
+        dx = @divFloor(dx, steps);
+        dy = @divFloor(dy, steps);
+
+        var x = v1_projected.x;
+        var y = v1_projected.y;
+        var i: u32 = 1;
+
+        while (i <= steps) {
+            self.drawVertex(x, y, color_buffer);
+            x += dx;
+            y += dy;
+            i += 1;
+        }
+    }
+
+    fn drawVertex(self: *Self, x: i32, y: i32, color_buffer: []u32) void {
+        var x_offset: i32 = @divFloor(self.size.x, 2);
+        var y_offset: i32 = @divFloor(self.size.y, 2);
+
+        var plot_x: i32 = x + x_offset;
+        var plot_y: i32 = y + y_offset;
+
+        var render_width = self.size.x;
+        var render_height = self.size.y;
+
+        if ((plot_y < 0) or (plot_y >= render_height) or (plot_x < 0) or (plot_x >= render_width)) {
+            return;
+        }
+
+        var i = @intCast(usize, plot_y * render_width + plot_x);
+        color_buffer[i] = self.color;
     }
 
     pub fn deinit(self: *Self) void {
         self.scene.deinit();
     }
 };
+
+fn applyTransformation(vector: Vector3D, obj: Object) Vector3D {
+    return vector.translate(obj.position).rotate(obj.rotation);
+}
 
 test "renderer" {
     var renderer = Renderer{

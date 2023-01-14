@@ -8,7 +8,6 @@ const scalar_type = primitives.scalar_type;
 const testing = std.testing;
 
 pub fn cube(name: []const u8, w: i32, h: i32, d: i32, allocator: std.mem.Allocator) !Object {
-
     var vertices = try ArrayList(Vector3D).initCapacity(allocator, 8);
 
     // this is a unit cube, each component will be scaled by the respective
