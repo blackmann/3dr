@@ -34,13 +34,11 @@ pub const App = struct {
     }
 
     pub fn start(self: *Self, dryRun: bool) !void {
-        var cube1 = try objects.cube("Cube.001", 150, 150, 1, self.allocator);
+        var cube1 = try objects.cube("Cube.001", 150, 150, 150, self.allocator);
         try self.renderer.scene.add(&cube1);
-        // cube1.rotation = .{ .x = 0, .y = 45, .z = 0 };
-        // cube1.position = .{ .x = -75, .y = -75, .z = 2};
 
         var obj = try objects.flatFace("Face.001", 100, 100, self.allocator);
-        try self.renderer.scene.add(&obj);
+        // try self.renderer.scene.add(&obj);
 
         obj.rotation = .{.x = 0, .y = 0, .z = 0};
         obj.position = .{.x = -150, .y = -50, .z = 2};
@@ -53,7 +51,11 @@ pub const App = struct {
         while (!dryRun and running) {
             var events = engine.pollEvents();
             cube1.rotation.x += 5;
+            cube1.rotation.y += 5;
+            cube1.rotation.z += 5;
+
             obj.rotation.y += 5;
+            // obj.rotation.z += 5;
 
             for (events.items) |event| {
                 if (event == 768) {

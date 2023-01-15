@@ -15,7 +15,7 @@ pub const Renderer = struct {
     size: Vector2D,
     fps: i32,
     backgroundColor: u32 = 0xff000000,
-    color: u32 = 0xffffffff,
+    color: u32 = 0xff00ff00,
 
     const Self = @This();
 

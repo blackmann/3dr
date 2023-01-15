@@ -19,18 +19,16 @@ pub const Vector3D = struct {
     const Self = @This();
 
     pub fn project2D(self: Self) Vector2D {
-        var z = if (self.z == 0) 1 else self.z;
-
         return Vector2D{
-            .x = @divFloor(self.x, z),
-            .y = @divFloor(self.y, z),
+            .x = self.x,
+            .y = self.y,
         };
     }
 
-    pub fn scale(self: Self, factor: i32) Vector3D {
-        var x = self.x * factor;
-        var y = self.y * factor;
-        var z = self.z * factor;
+    pub fn scale(self: Self, vector: Vector3D) Vector3D {
+        var x = self.x * vector.x;
+        var y = self.y * vector.y;
+        var z = self.z * vector.z;
 
         return Vector3D{ .x = x, .y = y, .z = z };
     }
@@ -47,7 +45,6 @@ pub const Vector3D = struct {
         var res = Vector3D{ .x = self.x, .y = self.y, .z = self.z };
 
         if (vector.x != 0) {
-            // x
             var angle: f64 = utils.toRadians(vector.x);
             var y = @intToFloat(f64, res.y) * math.cos(angle) - @intToFloat(f64, res.z) * math.sin(angle);
             var z = @intToFloat(f64, res.y) * math.sin(angle) + @intToFloat(f64, res.z) * math.cos(angle);
@@ -57,7 +54,6 @@ pub const Vector3D = struct {
         }
 
         if (vector.y != 0) {
-            // y
             var angle: f64 = utils.toRadians(vector.y);
             var x = @intToFloat(f64, res.x) * math.cos(angle) - @intToFloat(f64, res.z) * math.sin(angle);
             var z = @intToFloat(f64, res.x) * math.sin(angle) + @intToFloat(f64, res.z) * math.cos(angle);
@@ -68,8 +64,9 @@ pub const Vector3D = struct {
 
         if (vector.z != 0) {
             var angle: f64 = utils.toRadians(vector.z);
-            var x = (@intToFloat(f64, res.x) * math.cos(angle)) - (@intToFloat(f64, res.y) * math.sin(angle));
+            var x = @intToFloat(f64, res.x) * math.cos(angle) - @intToFloat(f64, res.y) * math.sin(angle);
             var y = @intToFloat(f64, res.x) * math.sin(angle) + @intToFloat(f64, res.y) * math.cos(angle);
+
 
             res.x = @floatToInt(i32, x);
             res.y = @floatToInt(i32, y);
