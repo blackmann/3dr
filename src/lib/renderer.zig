@@ -3,6 +3,7 @@ const primitives = @import("./primitives.zig");
 
 const testing = std.testing;
 const math = std.math;
+const print = std.debug.print;
 const ArrayList = std.ArrayList;
 const Scene = @import("./scene.zig").Scene;
 const Vector2D = primitives.Vector2D;
@@ -40,7 +41,7 @@ pub const Renderer = struct {
     fn renderScene(self: *Self, color_buffer: []u32) void {
         for (self.scene.objects.items) |obj| {
             for (obj.faces.items) |face| {
-                self.drawFace(obj, face, color_buffer);
+                self.drawFace(obj.*, face, color_buffer);
             }
         }
     }
@@ -74,21 +75,20 @@ pub const Renderer = struct {
         var v2_projected = v2.project2D();
 
         var dx = v2_projected.x - v1_projected.x;
-        var dy = v2_projected.y - v1_projected.x;
+        var dy = v2_projected.y - v1_projected.y;
 
-        var max_steps = math.max(math.absInt(dx) catch 0, math.absInt(dy) catch 0);
-        var steps = if (max_steps == 0) 1 else max_steps;
-        dx = @divFloor(dx, steps);
-        dy = @divFloor(dy, steps);
+        var steps = math.max(math.absInt(dx) catch 1, math.absInt(dy) catch 1);
+        var xi: f64 = @intToFloat(f64, dx) / @intToFloat(f64, steps);
+        var yi: f64 = @intToFloat(f64, dy) / @intToFloat(f64, steps);
 
-        var x = v1_projected.x;
-        var y = v1_projected.y;
-        var i: u32 = 1;
+        var x = @intToFloat(f64, v1_projected.x);
+        var y = @intToFloat(f64, v1_projected.y);
+        var i: u32 = 0;
 
         while (i <= steps) {
-            self.drawVertex(x, y, color_buffer);
-            x += dx;
-            y += dy;
+            self.drawVertex(@floatToInt(i32, x), @floatToInt(i32, y), color_buffer);
+            x += xi;
+            y += yi;
             i += 1;
         }
     }
@@ -117,7 +117,8 @@ pub const Renderer = struct {
 };
 
 fn applyTransformation(vector: Vector3D, obj: Object) Vector3D {
-    return vector.translate(obj.position).rotate(obj.rotation);
+    var res = vector.rotate(obj.rotation).translate(obj.position);
+    return res;
 }
 
 test "renderer" {

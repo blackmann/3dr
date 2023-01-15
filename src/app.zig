@@ -7,6 +7,7 @@ const Engine = @import("./lib/engine.zig").Engine;
 
 const testing = std.testing;
 const Vector2D = primitives.Vector2D;
+const Object = primitives.Object;
 
 pub const App = struct {
     allocator: std.mem.Allocator,
@@ -33,20 +34,34 @@ pub const App = struct {
     }
 
     pub fn start(self: *Self, dryRun: bool) !void {
-        var cube1 = try objects.cube("Cube.001", 100, 100, 100, self.allocator);
-        try self.renderer.scene.add(cube1);
+        var cube1 = try objects.cube("Cube.001", 150, 150, 1, self.allocator);
+        try self.renderer.scene.add(&cube1);
+        // cube1.rotation = .{ .x = 0, .y = 45, .z = 0 };
+        // cube1.position = .{ .x = -75, .y = -75, .z = 2};
+
+        var obj = try objects.flatFace("Face.001", 100, 100, self.allocator);
+        try self.renderer.scene.add(&obj);
+
+        obj.rotation = .{.x = 0, .y = 0, .z = 0};
+        obj.position = .{.x = -150, .y = -50, .z = 2};
 
         var engine = try Engine.init(self.allocator, self.renderer);
         defer engine.deinit();
 
         var running = true;
-        var frame_count: u16 = 0;
 
-        while (!dryRun and running and frame_count < 80) {
-            _ = engine.pollEvents();
+        while (!dryRun and running) {
+            var events = engine.pollEvents();
+            cube1.rotation.x += 5;
+            obj.rotation.y += 5;
+
+            for (events.items) |event| {
+                if (event == 768) {
+                    running = false;
+                }
+            }
 
             engine.requestAnimationFrame();
-            frame_count += 1;
         }
     }
 };

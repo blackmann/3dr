@@ -8,12 +8,12 @@ const Object = primitives.Object;
 
 pub const Scene = struct {
     name: []const u8,
-    objects: ArrayList(Object),
+    objects: ArrayList(*Object),
 
     const Self = @This();
 
     pub fn init(name: []const u8, allocator: std.mem.Allocator) Self {
-        return Scene{ .name = name, .objects = ArrayList(Object).init(allocator) };
+        return Scene{ .name = name, .objects = ArrayList(*Object).init(allocator) };
     }
 
     pub fn deinit(self: *Self) void {
@@ -24,7 +24,7 @@ pub const Scene = struct {
         self.objects.deinit();
     }
 
-    pub fn add(self: *Self, obj: Object) !void {
+    pub fn add(self: *Self, obj: *Object) !void {
         try self.objects.append(obj);
     }
 };
